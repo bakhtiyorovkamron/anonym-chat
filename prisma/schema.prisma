@@ -1,0 +1,203 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+  UNSPECIFIED
+}
+
+enum GenderPreference {
+  MALE
+  FEMALE
+  ANY
+}
+
+enum Language {
+  RUSSIAN
+  ENGLISH
+  UZBEK
+}
+
+enum Mode {
+  TALK
+  DATE
+  FLIRT
+  ROLEPLAY
+  COMPANY
+}
+
+enum MatchStatus {
+  ACTIVE
+  ENDED
+}
+
+enum ReportReason {
+  SPAM
+  HARASSMENT
+  SEXUAL_HARASSMENT
+  SCAM
+  THREATS
+  PERSONAL_INFORMATION
+  SUSPECTED_MINOR
+  OTHER
+}
+
+enum ReportStatus {
+  PENDING
+  REVIEWING
+  RESOLVED
+  DISMISSED
+}
+
+enum AdminRole {
+  MODERATOR
+  ADMIN
+}
+
+model User {
+  id              String      @id @default(uuid())
+  anonymousId     String      @unique
+  createdAt       DateTime    @default(now())
+  lastSeenAt      DateTime    @default(now())
+  online          Boolean     @default(false)
+  banned          Boolean     @default(false)
+  age             Int?
+  gender          Gender      @default(UNSPECIFIED)
+  preferredGender GenderPreference @default(ANY)
+  language        Language    @default(RUSSIAN)
+
+  personas        Persona[]
+  sentMessages    Message[]   @relation("SentMessages")
+  matchesA        Match[]     @relation("MatchUserA")
+  matchesB        Match[]     @relation("MatchUserB")
+  blocksInitiated Block[]     @relation("Blocker")
+  blockedBy       Block[]     @relation("Blocked")
+  reportsMade     Report[]    @relation("Reporter")
+  reportsAgainst  Report[]    @relation("ReportedUser")
+  admin           Admin?
+  searchQueue     SearchQueue?
+
+  @@index([online, banned, language])
+  @@index([lastSeenAt])
+}
+
+model Persona {
+  id        String   @id @default(uuid())
+  userId    String
+  nickname  String
+  age       Int
+  interests String[]
+  mode      Mode
+  createdAt DateTime @default(now())
+  active    Boolean  @default(true)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, active])
+}
+
+model Match {
+  id        String      @id @default(uuid())
+  userAId   String
+  userBId   String
+  status    MatchStatus @default(ACTIVE)
+  createdAt DateTime    @default(now())
+  endedAt   DateTime?
+
+  userA User @relation("MatchUserA", fields: [userAId], references: [id], onDelete: Cascade)
+  userB User @relation("MatchUserB", fields: [userBId], references: [id], onDelete: Cascade)
+
+  messages Message[]
+  reports  Report[]
+
+  @@index([userAId, status])
+  @@index([userBId, status])
+  @@index([status, createdAt])
+}
+
+model Message {
+  id        String   @id @default(uuid())
+  matchId   String
+  senderId  String
+  text      String
+  createdAt DateTime @default(now())
+  deletedAt DateTime?
+  replyToId String?
+
+  match   Match @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  sender  User  @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([matchId, createdAt])
+  @@index([senderId, createdAt])
+}
+
+model Block {
+  id        String   @id @default(uuid())
+  blockerId String
+  blockedId String
+  createdAt DateTime @default(now())
+
+  blocker User @relation("Blocker", fields: [blockerId], references: [id], onDelete: Cascade)
+  blocked User @relation("Blocked", fields: [blockedId], references: [id], onDelete: Cascade)
+
+  @@unique([blockerId, blockedId])
+  @@index([blockedId])
+}
+
+model Report {
+  id             String       @id @default(uuid())
+  reporterId     String
+  reportedUserId String
+  matchId        String?
+  reason         ReportReason
+  description    String?
+  status         ReportStatus @default(PENDING)
+  createdAt      DateTime     @default(now())
+  resolvedAt     DateTime?
+
+  reporter     User  @relation("Reporter", fields: [reporterId], references: [id], onDelete: Cascade)
+  reportedUser User  @relation("ReportedUser", fields: [reportedUserId], references: [id], onDelete: Cascade)
+  match        Match? @relation(fields: [matchId], references: [id], onDelete: SetNull)
+
+  @@index([status, createdAt])
+  @@index([reportedUserId, createdAt])
+  @@index([reporterId, createdAt])
+}
+
+model Admin {
+  id        String    @id @default(uuid())
+  userId    String    @unique
+  role      AdminRole @default(MODERATOR)
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model SearchQueue {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  mode      Mode
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([updatedAt])
+}
+
+model AnonymousConnection {
+  id        String   @id @default(uuid())
+  userAId   String
+  userBId   String
+  createdAt DateTime @default(now())
+
+  @@unique([userAId, userBId])
+}
