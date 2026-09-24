@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { compareAdminSecret, signAdminSession } from "@/lib/auth";
 import { COOKIE_NAMES } from "@/lib/constants";
+import { COOKIE_SECURE } from "@/lib/cookies";
 import { prisma } from "@/lib/prisma";
 import { checkRateLimit, getClientIp, resetRateLimit } from "@/lib/rate-limit";
 
@@ -57,7 +58,7 @@ export async function POST(request: NextRequest) {
   response.cookies.set(COOKIE_NAMES.admin, token, {
     httpOnly: true,
     sameSite: "strict",
-    secure: process.env.NODE_ENV === "production",
+    secure: COOKIE_SECURE,
     path: "/",
     maxAge: 60 * 60 * 12,
   });

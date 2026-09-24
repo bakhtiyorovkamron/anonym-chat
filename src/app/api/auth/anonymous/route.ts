@@ -3,6 +3,7 @@ import { jwtVerify } from "jose";
 import { NextResponse } from "next/server";
 import { createAnonymousSession } from "@/lib/auth";
 import { COOKIE_NAMES } from "@/lib/constants";
+import { COOKIE_SECURE } from "@/lib/cookies";
 import { newCsrfToken } from "@/lib/csrf";
 import { env } from "@/lib/env";
 import { prisma } from "@/lib/prisma";
@@ -28,7 +29,7 @@ export async function POST() {
           const response = NextResponse.json({ ok: true, hasPersona: user.personas.length > 0 });
           response.cookies.set(COOKIE_NAMES.csrf, newCsrfToken(), {
             sameSite: "strict",
-            secure: process.env.NODE_ENV === "production",
+            secure: COOKIE_SECURE,
             path: "/",
           });
           return response;
@@ -46,13 +47,13 @@ export async function POST() {
   response.cookies.set(COOKIE_NAMES.user, token, {
     httpOnly: true,
     sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
+    secure: COOKIE_SECURE,
     maxAge: 60 * 60 * 24 * 7,
     path: "/",
   });
   response.cookies.set(COOKIE_NAMES.csrf, newCsrfToken(), {
     sameSite: "strict",
-    secure: process.env.NODE_ENV === "production",
+    secure: COOKIE_SECURE,
     path: "/",
   });
 
