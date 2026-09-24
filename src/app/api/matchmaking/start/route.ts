@@ -2,11 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { getUserFromRequest } from "@/lib/auth";
 import { assertCsrf } from "@/lib/csrf";
 import { prisma } from "@/lib/prisma";
-import { pickBestCandidate, scoreCandidate, type CandidateState } from "@/server/matchmaking";
+import { checkRateLimit } from "@/lib/rate-limit";
+import { pickBestCandidate, type CandidateState } from "@/server/matchmaking";
 
 function keyForPair(userAId: string, userBId: string) {
   return [userAId, userBId].sort().join(":");
 }
+
+class MatchRaceError extends Error {}
 
 export async function POST(request: NextRequest) {
   if (!(await assertCsrf(request))) {
@@ -15,6 +18,11 @@ export async function POST(request: NextRequest) {
 
   const user = await getUserFromRequest(request);
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  // Clients poll this endpoint; ~1 req/sec is plenty.
+  if (!checkRateLimit(`matchmaking:${user.id}`, 20, 20_000)) {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+  }
 
   const activeMatch = await prisma.match.findFirst({
     where: {
@@ -47,7 +55,7 @@ export async function POST(request: NextRequest) {
       },
     },
     include: {
-      user: true,
+      user: { include: { personas: { where: { active: true }, take: 1 } } },
     },
     orderBy: { updatedAt: "asc" },
     take: 30,
@@ -77,7 +85,7 @@ export async function POST(request: NextRequest) {
 
   const candidates: CandidateState[] = [];
   for (const queued of queueUsers) {
-    const persona = await prisma.persona.findFirst({ where: { userId: queued.userId, active: true } });
+    const persona = queued.user.personas[0];
     if (!persona) continue;
 
     candidates.push({
@@ -96,21 +104,50 @@ export async function POST(request: NextRequest) {
     recentlyMatched: false,
   };
 
-  const { best } = pickBestCandidate(current, candidates);
-  if (!best || scoreCandidate(current, best) <= 0) {
+  const { best, bestScore } = pickBestCandidate(current, candidates);
+  if (!best || bestScore <= 0) {
     return NextResponse.json({ searching: true });
   }
 
-  const match = await prisma.$transaction(async (tx) => {
-    await tx.searchQueue.deleteMany({ where: { userId: { in: [user.id, best.user.id] } } });
-    return tx.match.create({
-      data: {
-        userAId: user.id,
-        userBId: best.user.id,
-        status: "ACTIVE",
-      },
-    });
-  });
+  try {
+    const match = await prisma.$transaction(async (tx) => {
+      // Claim both queue entries atomically. If a concurrent request already took
+      // either user, the count will be < 2 and we abort instead of double-matching.
+      const claimed = await tx.searchQueue.deleteMany({ where: { userId: { in: [user.id, best.user.id] } } });
+      if (claimed.count !== 2) throw new MatchRaceError();
 
-  return NextResponse.json({ matchId: match.id });
+      const existing = await tx.match.findFirst({
+        where: {
+          status: "ACTIVE",
+          OR: [
+            { userAId: { in: [user.id, best.user.id] } },
+            { userBId: { in: [user.id, best.user.id] } },
+          ],
+        },
+        select: { id: true },
+      });
+      if (existing) throw new MatchRaceError();
+
+      return tx.match.create({
+        data: {
+          userAId: user.id,
+          userBId: best.user.id,
+          status: "ACTIVE",
+        },
+      });
+    });
+
+    return NextResponse.json({ matchId: match.id });
+  } catch (error) {
+    if (!(error instanceof MatchRaceError)) throw error;
+
+    // Lost the race: the transaction rolled back, so our queue entry is intact.
+    // If someone matched *us* meanwhile, return that match.
+    const ourMatch = await prisma.match.findFirst({
+      where: { status: "ACTIVE", OR: [{ userAId: user.id }, { userBId: user.id }] },
+      select: { id: true },
+    });
+    if (ourMatch) return NextResponse.json({ matchId: ourMatch.id });
+    return NextResponse.json({ searching: true });
+  }
 }

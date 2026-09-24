@@ -4,6 +4,7 @@ import { getUserFromRequest } from "@/lib/auth";
 import { assertCsrf } from "@/lib/csrf";
 import { prisma } from "@/lib/prisma";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { emitMatchEnded } from "@/lib/realtime";
 
 const schema = z.object({
   blockedUserId: z.string().uuid(),
@@ -44,7 +45,7 @@ export async function POST(request: NextRequest) {
     update: {},
   });
 
-  await prisma.match.updateMany({
+  const toEnd = await prisma.match.findMany({
     where: {
       status: "ACTIVE",
       OR: [
@@ -52,8 +53,19 @@ export async function POST(request: NextRequest) {
         { userAId: parsed.data.blockedUserId, userBId: user.id },
       ],
     },
-    data: { status: "ENDED", endedAt: new Date() },
+    select: { id: true },
   });
+
+  if (toEnd.length > 0) {
+    await prisma.match.updateMany({
+      where: { id: { in: toEnd.map((m) => m.id) }, status: "ACTIVE" },
+      data: { status: "ENDED", endedAt: new Date() },
+    });
+
+    for (const { id } of toEnd) {
+      emitMatchEnded(id, user.id, "blocked");
+    }
+  }
 
   return NextResponse.json({ ok: true });
 }

@@ -44,7 +44,7 @@ export function scoreCandidate(current: CandidateState, candidate: CandidateStat
   return score;
 }
 
-export function pickBestCandidate(current: CandidateState, candidates: CandidateState[]) {
+function pickFrom(current: CandidateState, candidates: CandidateState[]) {
   let best: CandidateState | null = null;
   let bestScore = 0;
 
@@ -57,6 +57,21 @@ export function pickBestCandidate(current: CandidateState, candidates: Candidate
   }
 
   return { best, bestScore };
+}
+
+/**
+ * Prefers people the user hasn't talked to recently. If nobody else is
+ * available, falls back to recently matched partners so a small user pool
+ * doesn't get stuck searching forever. Blocks and self-matches are never allowed.
+ */
+export function pickBestCandidate(current: CandidateState, candidates: CandidateState[]) {
+  const fresh = pickFrom(current, candidates);
+  if (fresh.best) return fresh;
+
+  const recent = candidates
+    .filter((candidate) => candidate.recentlyMatched)
+    .map((candidate) => ({ ...candidate, recentlyMatched: false }));
+  return pickFrom(current, recent);
 }
 
 export function modeFromInput(input: string): Mode {

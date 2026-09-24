@@ -3,6 +3,7 @@ import { isAdminCookie } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { Card } from "@/components/ui/card";
 import { BanActions, ReportStatusActions } from "@/components/admin/admin-actions";
+import { StickerManager } from "@/components/admin/sticker-manager";
 
 export default async function AdminPage() {
   const allowed = await isAdminCookie();
@@ -60,6 +61,8 @@ export default async function AdminPage() {
           </Card>
         ))}
       </section>
+
+      <StickerManager />
     </main>
   );
 }

@@ -5,12 +5,19 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { getCsrfTokenFromCookie } from "@/lib/utils";
+import { getSocket } from "@/lib/socket-client";
 
 export default function MatchPage() {
   const router = useRouter();
   const [searching, setSearching] = useState(false);
   const [statusText, setStatusText] = useState("");
   const [error, setError] = useState("");
+
+  // Matchmaking only considers users with an open socket (online = true).
+  // Without this, a user who opened /match directly is invisible to others.
+  useEffect(() => {
+    getSocket();
+  }, []);
 
   useEffect(() => {
     let timer: NodeJS.Timeout | null = null;

@@ -73,4 +73,35 @@ describe("matchmaking", () => {
     const result = pickBestCandidate(base, [c1, c2]);
     expect(result.best?.user.id).toBe("u3");
   });
+
+  it("prefers fresh candidates over recently matched ones", () => {
+    const recent: CandidateState = { ...base, user: { ...base.user, id: "u2" }, recentlyMatched: true };
+    const fresh: CandidateState = {
+      ...base,
+      user: { ...base.user, id: "u3", language: Language.ENGLISH },
+    };
+
+    const result = pickBestCandidate(base, [recent, fresh]);
+    expect(result.best?.user.id).toBe("u3");
+  });
+
+  it("falls back to a recently matched candidate when nobody else is available", () => {
+    const recent: CandidateState = { ...base, user: { ...base.user, id: "u2" }, recentlyMatched: true };
+
+    const result = pickBestCandidate(base, [recent]);
+    expect(result.best?.user.id).toBe("u2");
+    expect(result.bestScore).toBeGreaterThan(0);
+  });
+
+  it("never falls back to blocked candidates", () => {
+    const blocked: CandidateState = {
+      ...base,
+      user: { ...base.user, id: "u2" },
+      recentlyMatched: true,
+      blocked: true,
+    };
+
+    const result = pickBestCandidate(base, [blocked]);
+    expect(result.best).toBeNull();
+  });
 });

@@ -57,6 +57,11 @@ enum ReportStatus {
   DISMISSED
 }
 
+enum MessageType {
+  TEXT
+  STICKER
+}
+
 enum AdminRole {
   MODERATOR
   ADMIN
@@ -124,16 +129,19 @@ model Match {
 }
 
 model Message {
-  id        String   @id @default(uuid())
+  id        String      @id @default(uuid())
   matchId   String
   senderId  String
-  text      String
-  createdAt DateTime @default(now())
+  type      MessageType @default(TEXT)
+  text      String      @default("")
+  stickerId String?
+  createdAt DateTime    @default(now())
   deletedAt DateTime?
   replyToId String?
 
-  match   Match @relation(fields: [matchId], references: [id], onDelete: Cascade)
-  sender  User  @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  match   Match    @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  sender  User     @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  sticker Sticker? @relation(fields: [stickerId], references: [id], onDelete: SetNull)
 
   @@index([matchId, createdAt])
   @@index([senderId, createdAt])
@@ -191,6 +199,22 @@ model SearchQueue {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([updatedAt])
+}
+
+// Files live in ./uploads/stickers/<fileName> and are served by /api/stickers/file/<fileName>.
+model Sticker {
+  id        String   @id @default(uuid())
+  name      String
+  fileName  String   @unique
+  mimeType  String
+  size      Int
+  active    Boolean  @default(true)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+
+  messages Message[]
+
+  @@index([active, sortOrder])
 }
 
 model AnonymousConnection {

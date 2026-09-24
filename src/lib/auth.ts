@@ -1,4 +1,4 @@
-import { randomUUID, timingSafeEqual } from "crypto";
+import { createHash, randomUUID, timingSafeEqual } from "crypto";
 import { cookies } from "next/headers";
 import { jwtVerify, SignJWT } from "jose";
 import { NextRequest } from "next/server";
@@ -96,8 +96,8 @@ export async function isAdminCookie() {
 }
 
 export function compareAdminSecret(input: string) {
-  const inputBuffer = Buffer.from(input);
-  const secretBuffer = Buffer.from(env.ADMIN_SECRET);
-  if (inputBuffer.length !== secretBuffer.length) return false;
-  return timingSafeEqual(inputBuffer, secretBuffer);
+  // Hash both sides so the comparison is constant-time and doesn't leak length.
+  const inputHash = createHash("sha256").update(input).digest();
+  const secretHash = createHash("sha256").update(env.ADMIN_SECRET).digest();
+  return timingSafeEqual(inputHash, secretHash);
 }

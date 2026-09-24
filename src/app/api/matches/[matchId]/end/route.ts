@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getUserFromRequest } from "@/lib/auth";
 import { assertCsrf } from "@/lib/csrf";
 import { prisma } from "@/lib/prisma";
+import { emitMatchEnded } from "@/lib/realtime";
 
 export async function POST(request: NextRequest, context: { params: Promise<{ matchId: string }> }) {
   if (!(await assertCsrf(request))) {
@@ -17,10 +18,14 @@ export async function POST(request: NextRequest, context: { params: Promise<{ ma
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  await prisma.match.update({
-    where: { id: matchId },
+  const updated = await prisma.match.updateMany({
+    where: { id: matchId, status: "ACTIVE" },
     data: { status: "ENDED", endedAt: new Date() },
   });
+
+  if (updated.count > 0) {
+    emitMatchEnded(matchId, user.id, "ended");
+  }
 
   return NextResponse.json({ ok: true });
 }

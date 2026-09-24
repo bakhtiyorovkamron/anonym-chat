@@ -17,10 +17,16 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     let active = true;
 
     fetch("/api/auth/anonymous", { method: "POST" })
-      .then((res) => res.json())
+      .then(async (res) => {
+        if (!res.ok) throw new Error(`Session request failed: ${res.status}`);
+        return res.json().catch(() => ({}));
+      })
       .then((json) => {
         if (!active) return;
-        setHasPersona(Boolean(json.hasPersona));
+        setHasPersona(Boolean(json?.hasPersona));
+      })
+      .catch((error) => {
+        console.error("[session]", error);
       })
       .finally(() => {
         if (active) setReady(true);

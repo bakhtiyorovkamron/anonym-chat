@@ -26,8 +26,9 @@
 ## Environment variables
 См. `.env.example`:
 - `DATABASE_URL`
-- `AUTH_SECRET`
+- `AUTH_SECRET` (минимум 32 символа, иначе `server.mjs` не стартует)
 - `ADMIN_SECRET`
+- `ALLOWED_ORIGINS` — список origin через запятую для Socket.IO (например `https://chat.example.com`). В dev по умолчанию `http://localhost:$PORT`; в production обязателен.
 - `PORT`
 - `NODE_ENV`
 

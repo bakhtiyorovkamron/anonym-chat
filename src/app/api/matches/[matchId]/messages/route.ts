@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getUserFromRequest } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { stickerUrl } from "@/lib/sticker-storage";
 
 export async function GET(request: NextRequest, context: { params: Promise<{ matchId: string }> }) {
   const user = await getUserFromRequest(request);
@@ -15,6 +16,7 @@ export async function GET(request: NextRequest, context: { params: Promise<{ mat
       messages: {
         orderBy: { createdAt: "asc" },
         take: 200,
+        include: { sticker: { select: { fileName: true, name: true, mimeType: true } } },
       },
     },
   });
@@ -24,11 +26,17 @@ export async function GET(request: NextRequest, context: { params: Promise<{ mat
   }
 
   const partner = match.userAId === user.id ? match.userB : match.userA;
+  const self = match.userAId === user.id ? match.userA : match.userB;
   const activePersona = partner.personas[0];
 
   return NextResponse.json({
     match: {
       id: match.id,
+      status: match.status,
+      me: {
+        id: user.id,
+        nickname: self.personas[0]?.nickname ?? "Ты",
+      },
       partner: {
         id: partner.id,
         nickname: activePersona?.nickname ?? "Anonymous",
@@ -37,6 +45,9 @@ export async function GET(request: NextRequest, context: { params: Promise<{ mat
         online: partner.online,
       },
     },
-    messages: match.messages,
+    messages: match.messages.map(({ sticker, ...message }) => ({
+      ...message,
+      sticker: sticker ? { url: stickerUrl(sticker.fileName), name: sticker.name, mimeType: sticker.mimeType } : null,
+    })),
   });
 }
