@@ -6,7 +6,7 @@ import { PrismaClient } from "@prisma/client";
 
 const dev = process.env.NODE_ENV !== "production";
 const hostname = "0.0.0.0";
-const port = Number(process.env.PORT || 3000);
+const port = Number(process.env.PORT || 4000);
 
 if (!process.env.AUTH_SECRET || process.env.AUTH_SECRET.length < 32) {
   console.error("AUTH_SECRET is missing or shorter than 32 chars. Refusing to start.");

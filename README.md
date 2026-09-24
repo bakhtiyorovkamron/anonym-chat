@@ -47,7 +47,7 @@ npm run dev
 ```bash
 docker compose up -d --build
 ```
-- Приложение: http://localhost:3000, база доступна с хоста на `localhost:5430`.
+- Приложение: http://localhost:4000, база доступна с хоста на `localhost:5430`.
 - `AUTH_SECRET` и `ADMIN_SECRET` берутся из `.env` рядом с `docker-compose.yml`; `DATABASE_URL` для контейнера задаётся в compose (`db:5432`).
 - Миграции применяются автоматически при старте контейнера (`prisma migrate deploy`). Отключить: `RUN_MIGRATIONS=false`.
 - Загруженные GIF хранятся в volume `uploads`, база — в volume `pgdata`.

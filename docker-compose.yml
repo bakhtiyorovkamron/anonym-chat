@@ -24,7 +24,7 @@ services:
       db:
         condition: service_healthy
     ports:
-      - "3000:3000"
+      - "4000:4000"
     environment:
       # Inside the Docker network the database is reachable as "db:5432", not localhost:5430.
       DATABASE_URL: postgresql://anonym:anonym@db:5432/anonym_chat?schema=public
@@ -32,8 +32,8 @@ services:
       AUTH_SECRET: ${AUTH_SECRET:?AUTH_SECRET is not set in .env}
       ADMIN_SECRET: ${ADMIN_SECRET:?ADMIN_SECRET is not set in .env}
       # Origins allowed to open a Socket.IO connection. Add your domain / LAN address here, comma-separated.
-      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:3000}
-      PORT: 3000
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:4000}
+      PORT: 4000
       NODE_ENV: production
     volumes:
       - uploads:/app/uploads

@@ -35,7 +35,7 @@ RUN npm ci --omit=dev && npx prisma generate && npm cache clean --force
 FROM base AS runner
 ENV NODE_ENV=production \
     NEXT_TELEMETRY_DISABLED=1 \
-    PORT=3000
+    PORT=4000
 
 COPY --from=prod-deps --chown=node:node /app/node_modules ./node_modules
 COPY --from=builder --chown=node:node /app/.next ./.next
@@ -48,7 +48,7 @@ COPY --chown=node:node docker/entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN mkdir -p /app/uploads/stickers && chown -R node:node /app/uploads && chmod +x /usr/local/bin/entrypoint.sh
 
 USER node
-EXPOSE 3000
+EXPOSE 4000
 
 HEALTHCHECK --interval=15s --timeout=5s --start-period=30s --retries=5 \
   CMD wget -qO- "http://127.0.0.1:${PORT}/" >/dev/null || exit 1
