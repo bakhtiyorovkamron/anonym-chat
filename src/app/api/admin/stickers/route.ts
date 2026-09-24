@@ -37,6 +37,16 @@ export async function GET(request: NextRequest) {
 
 // Upload one or more stickers (multipart field "files").
 export async function POST(request: NextRequest) {
+  try {
+    return await handleUpload(request);
+  } catch (error) {
+    console.error("[admin/stickers] upload failed", error);
+    const message = error instanceof Error ? error.message : String(error);
+    return NextResponse.json({ error: `Ошибка сервера: ${message}` }, { status: 500 });
+  }
+}
+
+async function handleUpload(request: NextRequest) {
   if (!(await assertCsrf(request))) {
     return NextResponse.json({ error: "Invalid CSRF token" }, { status: 403 });
   }
@@ -76,9 +86,10 @@ export async function POST(request: NextRequest) {
         data: { name, fileName, mimeType: mime, size: buffer.length, sortOrder: order++ },
       });
       created.push(sticker.id);
-    } catch {
+    } catch (error) {
+      console.error("[admin/stickers] db insert failed", error);
       await deleteStickerFile(fileName);
-      errors.push(`${file.name}: ошибка сохранения`);
+      errors.push(`${file.name}: ошибка сохранения в базе`);
     }
   }
 

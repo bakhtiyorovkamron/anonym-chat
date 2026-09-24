@@ -66,7 +66,14 @@ export function StickerManager() {
     setUploading(false);
     if (inputRef.current) inputRef.current.value = "";
     if (data.created) setMessage(`Добавлено: ${data.created}`);
-    setErrors(data.errors ?? (response.ok ? [] : [data.error ?? "Ошибка загрузки"]));
+    const fallback =
+      response.status === 413
+        ? "Файл слишком большой для сервера (413)"
+        : `Ошибка загрузки (HTTP ${response.status})`;
+    const list: string[] = [...(data.errors ?? [])];
+    if (!response.ok && data.error) list.unshift(data.error);
+    if (!response.ok && list.length === 0) list.push(fallback);
+    setErrors(list);
     load();
   };
 
