@@ -1,0 +1,27 @@
+# Never send secrets into the build context
+.env
+.env.*
+!.env.example
+
+# Rebuilt inside the image
+node_modules
+.next
+out
+build
+coverage
+*.tsbuildinfo
+
+# Runtime data (mounted as volumes)
+uploads
+
+# Tooling / VCS
+.git
+.gitignore
+.idea
+.vscode
+.DS_Store
+npm-debug.log*
+Dockerfile
+docker-compose*.yml
+.dockerignore
+README.md
