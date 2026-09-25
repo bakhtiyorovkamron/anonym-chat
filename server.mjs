@@ -67,6 +67,81 @@ function sanitizeText(input) {
 // Open sockets per user: closing one tab must not mark the user offline.
 const socketsPerUser = new Map();
 
+// ---------- IP + geolocation ----------
+// Set TRUST_PROXY=true only when running behind nginx/Cloudflare, otherwise
+// X-Forwarded-For can be spoofed by the client.
+const trustProxy = process.env.TRUST_PROXY === "true";
+
+function getClientIp(socket) {
+  const headers = socket.handshake.headers;
+  if (trustProxy) {
+    const cf = headers["cf-connecting-ip"];
+    if (typeof cf === "string" && cf) return cf.trim();
+    const xff = headers["x-forwarded-for"];
+    if (typeof xff === "string" && xff) return xff.split(",")[0].trim();
+    const real = headers["x-real-ip"];
+    if (typeof real === "string" && real) return real.trim();
+  }
+  return (socket.handshake.address || "").replace(/^::ffff:/, "");
+}
+
+function isPrivateIp(ip) {
+  return (
+    !ip ||
+    ip === "::1" ||
+    ip.startsWith("127.") ||
+    ip.startsWith("10.") ||
+    ip.startsWith("192.168.") ||
+    /^172\.(1[6-9]|2\d|3[01])\./.test(ip) ||
+    ip.startsWith("fc") ||
+    ip.startsWith("fd") ||
+    ip.startsWith("fe80")
+  );
+}
+
+const geoCache = new Map(); // ip -> { country, countryCode, city, at }
+const GEO_TTL_MS = 24 * 60 * 60_000;
+
+async function lookupGeo(ip) {
+  if (isPrivateIp(ip)) return { country: "Локальная сеть", countryCode: null, city: null };
+  const cached = geoCache.get(ip);
+  if (cached && Date.now() - cached.at < GEO_TTL_MS) return cached;
+  try {
+    const res = await fetch(
+      `http://ip-api.com/json/${encodeURIComponent(ip)}?fields=status,country,countryCode,regionName,city&lang=ru`,
+      { signal: AbortSignal.timeout(3000) },
+    );
+    const data = await res.json();
+    if (data.status !== "success") return null;
+    const parts = [data.city, data.regionName].filter(Boolean);
+    const geo = {
+      country: data.country || null,
+      countryCode: data.countryCode || null,
+      city: [...new Set(parts)].join(", ") || null,
+      at: Date.now(),
+    };
+    geoCache.set(ip, geo);
+    return geo;
+  } catch {
+    return null;
+  }
+}
+
+async function recordIp(userId, ip) {
+  if (!ip) return;
+  const user = await prisma.user.findUnique({ where: { id: userId }, select: { lastIp: true, country: true } });
+  if (!user) return;
+  if (user.lastIp === ip && user.country) return; // nothing changed
+  const geo = await lookupGeo(ip);
+  await prisma.user.update({
+    where: { id: userId },
+    data: {
+      lastIp: ip,
+      ...(geo ? { country: geo.country, countryCode: geo.countryCode, city: geo.city } : {}),
+    },
+  });
+}
+
 async function setOnline(userId, online) {
   await prisma.user.update({ where: { id: userId }, data: { online, lastSeenAt: new Date() } });
 }
@@ -125,6 +200,7 @@ app.prepare().then(() => {
     socket.join(`user:${userId}`);
     socketsPerUser.set(userId, (socketsPerUser.get(userId) ?? 0) + 1);
     setOnline(userId, true).catch((error) => console.error("[socket:online]", error));
+    recordIp(userId, getClientIp(socket)).catch((error) => console.error("[socket:ip]", error));
 
     socket.on(
       "join_match",

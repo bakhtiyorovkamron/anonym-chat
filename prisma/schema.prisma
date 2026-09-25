@@ -78,6 +78,10 @@ model User {
   gender          Gender      @default(UNSPECIFIED)
   preferredGender GenderPreference @default(ANY)
   language        Language    @default(RUSSIAN)
+  lastIp          String?
+  country         String?
+  countryCode     String?
+  city            String?
 
   personas        Persona[]
   sentMessages    Message[]   @relation("SentMessages")
@@ -92,6 +96,7 @@ model User {
 
   @@index([online, banned, language])
   @@index([lastSeenAt])
+  @@index([lastIp])
 }
 
 model Persona {

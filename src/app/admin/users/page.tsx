@@ -14,6 +14,11 @@ const FILTERS = [
   { key: "banned", label: "Забаненные" },
 ] as const;
 
+function flag(code?: string | null) {
+  if (!code || code.length !== 2) return "🌐";
+  return String.fromCodePoint(...[...code.toUpperCase()].map((c) => 0x1f1a5 + c.charCodeAt(0)));
+}
+
 export default async function AdminUsersPage({
   searchParams,
 }: {
@@ -34,6 +39,9 @@ export default async function AdminUsersPage({
           OR: [
             { anonymousId: { contains: query, mode: "insensitive" } },
             { personas: { some: { nickname: { contains: query, mode: "insensitive" } } } },
+            { lastIp: { contains: query } },
+            { country: { contains: query, mode: "insensitive" } },
+            { city: { contains: query, mode: "insensitive" } },
           ],
         }
       : {}),
@@ -87,7 +95,7 @@ export default async function AdminUsersPage({
           <input
             name="q"
             defaultValue={query}
-            placeholder="Никнейм или anon_id"
+            placeholder="Ник, anon_id, IP, страна, город"
             className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm sm:w-64"
           />
           <button className="rounded-lg bg-zinc-800 px-3 py-2 text-sm hover:bg-zinc-700">Найти</button>
@@ -111,6 +119,17 @@ export default async function AdminUsersPage({
                     {u.anonymousId}
                     {persona ? ` · ${persona.age} лет · ${persona.mode}` : ""}
                     {` · ${u.gender} · ищет ${u.preferredGender} · ${u.language}`}
+                  </p>
+                  <p className="text-xs text-zinc-300">
+                    {flag(u.countryCode)} {[u.country, u.city].filter(Boolean).join(", ") || "Местоположение неизвестно"}
+                    {u.lastIp ? (
+                      <>
+                        {" · IP: "}
+                        <Link href={`/admin/users?q=${encodeURIComponent(u.lastIp)}`} className="text-violet-300 hover:underline">
+                          {u.lastIp}
+                        </Link>
+                      </>
+                    ) : null}
                   </p>
                   {persona?.interests.length ? (
                     <p className="text-xs text-zinc-500">Интересы: {persona.interests.join(", ")}</p>

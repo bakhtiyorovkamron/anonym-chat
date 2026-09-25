@@ -11,9 +11,16 @@ const userInclude = {
   select: {
     anonymousId: true,
     online: true,
+    countryCode: true,
+    city: true,
     personas: { where: { active: true }, take: 1, select: { nickname: true } },
   },
 } as const;
+
+function flag(code?: string | null) {
+  if (!code || code.length !== 2) return "";
+  return String.fromCodePoint(...[...code.toUpperCase()].map((c) => 0x1f1a5 + c.charCodeAt(0)));
+}
 
 export default async function AdminChatsPage({ searchParams }: { searchParams: Promise<{ status?: string }> }) {
   if (!(await isAdminCookie())) redirect("/admin/login");
@@ -32,7 +39,8 @@ export default async function AdminChatsPage({ searchParams }: { searchParams: P
     },
   });
 
-  const name = (u: (typeof matches)[number]["userA"]) => u.personas[0]?.nickname ?? u.anonymousId;
+  const name = (u: (typeof matches)[number]["userA"]) =>
+    `${u.personas[0]?.nickname ?? u.anonymousId}${u.countryCode || u.city ? ` (${flag(u.countryCode)}${u.city ? " " + u.city : ""})` : ""}`;
 
   return (
     <main className="mx-auto w-full max-w-6xl px-3 py-4 sm:px-4 sm:py-8">

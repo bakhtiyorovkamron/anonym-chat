@@ -16,9 +16,18 @@ const userInclude = {
     anonymousId: true,
     online: true,
     banned: true,
+    lastIp: true,
+    country: true,
+    countryCode: true,
+    city: true,
     personas: { where: { active: true }, take: 1, select: { nickname: true, age: true, mode: true } },
   },
 } as const;
+
+function flag(code?: string | null) {
+  if (!code || code.length !== 2) return "🌐";
+  return String.fromCodePoint(...[...code.toUpperCase()].map((c) => 0x1f1a5 + c.charCodeAt(0)));
+}
 
 export default async function AdminChatViewPage({ params }: { params: Promise<{ matchId: string }> }) {
   if (!(await isAdminCookie())) redirect("/admin/login");
@@ -67,6 +76,17 @@ export default async function AdminChatViewPage({ params }: { params: Promise<{ 
             <p className="break-words text-xs text-zinc-400">
               {u.anonymousId}
               {u.personas[0] ? ` · ${u.personas[0].age} лет · ${u.personas[0].mode}` : ""}
+            </p>
+            <p className="mt-1 text-xs text-zinc-300">
+              {flag(u.countryCode)} {[u.country, u.city].filter(Boolean).join(", ") || "Местоположение неизвестно"}
+              {u.lastIp ? (
+                <>
+                  {" · IP: "}
+                  <Link href={`/admin/users?q=${encodeURIComponent(u.lastIp)}`} className="text-violet-300 hover:underline">
+                    {u.lastIp}
+                  </Link>
+                </>
+              ) : null}
             </p>
             <p className="mt-1 text-xs text-zinc-500">
               Подтвердил: {(i === 0 ? match.acceptedA : match.acceptedB) ? "да" : "нет"}
