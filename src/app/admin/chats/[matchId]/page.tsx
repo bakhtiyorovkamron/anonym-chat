@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { stickerUrl } from "@/lib/sticker-storage";
 import { Card } from "@/components/ui/card";
 import { AutoRefresh } from "@/components/admin/auto-refresh";
-import { BanActions } from "@/components/admin/admin-actions";
+import { UserActions } from "@/components/admin/admin-actions";
 import { GifMedia } from "@/components/ui/gif-media";
 
 export const dynamic = "force-dynamic";

@@ -32,13 +32,21 @@ export default async function AdminPage() {
   return (
     <main className="mx-auto w-full max-w-6xl px-3 py-4 sm:px-4 sm:py-8">
       <h1 className="text-xl font-semibold sm:text-2xl">Admin panel</h1>
+      <nav className="mt-4 flex flex-wrap gap-2 text-sm">
+        <Link href="/admin/users" className="rounded-lg bg-violet-600 px-3 py-2 text-white hover:bg-violet-500">
+          👥 Пользователи
+        </Link>
+        <Link href="/admin/chats" className="rounded-lg bg-violet-600 px-3 py-2 text-white hover:bg-violet-500">
+          👀 Чаты
+        </Link>
+      </nav>
       <section className="mt-4 grid grid-cols-2 gap-2 text-sm sm:mt-6 sm:grid-cols-3 sm:gap-3 sm:text-base lg:grid-cols-6">
-        <Card>Users: {users}</Card>
-        <Card>Online: {onlineUsers}</Card>
-        <Card>Active chats: {activeChats}</Card>
+        <Link href="/admin/users"><Card className="h-full hover:border-violet-500">Users: {users}</Card></Link>
+        <Link href="/admin/users?filter=online"><Card className="h-full hover:border-violet-500">Online: {onlineUsers}</Card></Link>
+        <Link href="/admin/chats"><Card className="h-full hover:border-violet-500">Active chats: {activeChats}</Card></Link>
         <Card>Messages: {messages}</Card>
         <Card>Reports: {reports}</Card>
-        <Card>Blocked users: {blockedUsers}</Card>
+        <Link href="/admin/users?filter=banned"><Card className="h-full hover:border-violet-500">Blocked users: {blockedUsers}</Card></Link>
       </section>
 
       <section className="mt-8 space-y-3">

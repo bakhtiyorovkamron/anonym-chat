@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { assertCsrf } from "@/lib/csrf";
 import { isAdminRequest } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { emitMatchEnded } from "@/lib/realtime";
 
 export async function POST(request: NextRequest, context: { params: Promise<{ userId: string }> }) {
   if (!(await assertCsrf(request))) {
