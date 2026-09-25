@@ -28,7 +28,7 @@ export default function AdminLoginPage() {
   };
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-md items-center px-4">
+    <main className="mx-auto flex min-h-[100dvh] w-full max-w-md items-center px-3 sm:px-4">
       <Card className="w-full">
         <h1 className="text-xl font-semibold">Admin login</h1>
         <Input type="password" value={secret} onChange={(e) => setSecret(e.target.value)} className="mt-4" />

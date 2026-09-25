@@ -79,26 +79,26 @@ export default function OnboardingPage() {
   };
 
   return (
-    <main className="mx-auto w-full max-w-2xl px-4 py-8">
+    <main className="mx-auto w-full max-w-2xl px-3 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-4 sm:py-8">
       <Card>
-        <h1 className="text-2xl font-semibold">Создай анонимную маску</h1>
+        <h1 className="text-xl font-semibold sm:text-2xl">Создай анонимную маску</h1>
         <p className="mt-2 text-sm text-zinc-400">Минимум данных, максимум приватности.</p>
 
         <div className="mt-5 space-y-4">
           <label className="block text-sm">
             Псевдоним
-            <Input value={nickname} onChange={(e) => setNickname(e.target.value)} placeholder="Luna" maxLength={24} className="mt-1" />
+            <Input value={nickname} onChange={(e) => setNickname(e.target.value)} placeholder="Luna" maxLength={24} autoComplete="off" className="mt-1" />
           </label>
 
           <label className="block text-sm">
             Возраст (18-99)
-            <Input value={age} onChange={(e) => setAge(e.target.value)} type="number" min={18} max={99} className="mt-1" />
+            <Input value={age} onChange={(e) => setAge(e.target.value)} type="number" inputMode="numeric" min={18} max={99} className="mt-1" />
           </label>
 
           <div className="grid gap-4 sm:grid-cols-2">
             <label className="text-sm">
               Пол
-              <select value={gender} onChange={(e) => setGender(e.target.value)} className="mt-1 h-10 w-full rounded-xl border border-zinc-700 bg-zinc-950 px-3">
+              <select value={gender} onChange={(e) => setGender(e.target.value)} className="select-field mt-1 h-10 w-full rounded-xl border border-zinc-700 bg-zinc-950 px-3">
                 {genders.map((item) => (
                   <option key={item.value} value={item.value}>
                     {item.label}
@@ -109,7 +109,7 @@ export default function OnboardingPage() {
 
             <label className="text-sm">
               Кого ищу
-              <select value={preferredGender} onChange={(e) => setPreferredGender(e.target.value)} className="mt-1 h-10 w-full rounded-xl border border-zinc-700 bg-zinc-950 px-3">
+              <select value={preferredGender} onChange={(e) => setPreferredGender(e.target.value)} className="select-field mt-1 h-10 w-full rounded-xl border border-zinc-700 bg-zinc-950 px-3">
                 {preferred.map((item) => (
                   <option key={item.value} value={item.value}>
                     {item.label}
@@ -121,7 +121,7 @@ export default function OnboardingPage() {
 
           <label className="block text-sm">
             Язык
-            <select value={language} onChange={(e) => setLanguage(e.target.value)} className="mt-1 h-10 w-full rounded-xl border border-zinc-700 bg-zinc-950 px-3">
+            <select value={language} onChange={(e) => setLanguage(e.target.value)} className="select-field mt-1 h-10 w-full rounded-xl border border-zinc-700 bg-zinc-950 px-3">
               {LANGUAGE_OPTIONS.map((item) => (
                 <option key={item.value} value={item.value}>
                   {item.label}
@@ -132,7 +132,7 @@ export default function OnboardingPage() {
 
           <label className="block text-sm">
             Что ты хочешь сейчас?
-            <select value={mode} onChange={(e) => setMode(e.target.value)} className="mt-1 h-10 w-full rounded-xl border border-zinc-700 bg-zinc-950 px-3">
+            <select value={mode} onChange={(e) => setMode(e.target.value)} className="select-field mt-1 h-10 w-full rounded-xl border border-zinc-700 bg-zinc-950 px-3">
               {MODE_OPTIONS.map((item) => (
                 <option key={item.value} value={item.value}>
                   {item.label}
@@ -149,7 +149,7 @@ export default function OnboardingPage() {
                   key={interest}
                   type="button"
                   onClick={() => toggleInterest(interest)}
-                  className={`rounded-full border px-3 py-1 text-xs ${
+                  className={`rounded-full border px-3 py-2 text-sm sm:py-1 sm:text-xs ${
                     interests.includes(interest)
                       ? "border-violet-400 bg-violet-500/20 text-violet-100"
                       : "border-zinc-700 text-zinc-400"
@@ -161,14 +161,14 @@ export default function OnboardingPage() {
             </div>
           </div>
 
-          <label className="flex items-center gap-2 text-sm">
-            <input type="checkbox" checked={adult} onChange={(e) => setAdult(e.target.checked)} className="size-4" />
+          <label className="flex items-center gap-3 py-1 text-sm">
+            <input type="checkbox" checked={adult} onChange={(e) => setAdult(e.target.checked)} className="size-5 sm:size-4" />
             Мне исполнилось 18 лет
           </label>
 
           {error ? <p className="text-sm text-red-400">{error}</p> : null}
 
-          <Button disabled={loading} onClick={submit} className="w-full">
+          <Button disabled={loading} onClick={submit} size="lg" className="w-full">
             {loading ? "Сохраняем..." : "Продолжить"}
           </Button>
         </div>

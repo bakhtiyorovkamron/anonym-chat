@@ -148,7 +148,7 @@ export function StickerManager() {
 
       {stickers.length === 0 ? <Card className="text-sm text-zinc-500">GIF пока нет.</Card> : null}
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-2 sm:gap-3 lg:grid-cols-4">
         {stickers.map((sticker, index) => (
           <Card key={sticker.id} className={`space-y-2 ${sticker.active ? "" : "opacity-50"}`}>
             <div className="flex h-28 items-center justify-center rounded-xl bg-zinc-950">

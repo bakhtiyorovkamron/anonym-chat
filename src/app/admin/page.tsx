@@ -29,9 +29,9 @@ export default async function AdminPage() {
   ]);
 
   return (
-    <main className="mx-auto w-full max-w-6xl px-4 py-8">
-      <h1 className="text-2xl font-semibold">Admin panel</h1>
-      <section className="mt-6 grid gap-3 sm:grid-cols-3 lg:grid-cols-6">
+    <main className="mx-auto w-full max-w-6xl px-3 py-4 sm:px-4 sm:py-8">
+      <h1 className="text-xl font-semibold sm:text-2xl">Admin panel</h1>
+      <section className="mt-4 grid grid-cols-2 gap-2 text-sm sm:mt-6 sm:grid-cols-3 sm:gap-3 sm:text-base lg:grid-cols-6">
         <Card>Users: {users}</Card>
         <Card>Online: {onlineUsers}</Card>
         <Card>Active chats: {activeChats}</Card>
@@ -44,8 +44,8 @@ export default async function AdminPage() {
         <h2 className="text-lg font-semibold">Recent reports</h2>
         {recentReports.map((report) => (
           <Card key={report.id}>
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div className="text-sm">
+            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+              <div className="min-w-0 break-words text-sm">
                 <p>Reporter: {report.reporter.anonymousId}</p>
                 <p>Reported: {report.reportedUser.anonymousId}</p>
                 <p>Reason: {report.reason}</p>

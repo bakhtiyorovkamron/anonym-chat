@@ -64,14 +64,15 @@ export default function MatchPage() {
   };
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-xl items-center px-4">
+    <main className="mx-auto flex min-h-[100dvh] w-full max-w-xl items-center px-3 py-6 sm:px-4">
       <Card className="w-full text-center">
-        <h1 className="text-2xl font-semibold">Что ты хочешь сейчас?</h1>
-        <p className="mt-2 text-zinc-400">Выбери собеседника по интересам и настроению.</p>
+        <h1 className="text-xl font-semibold sm:text-2xl">Что ты хочешь сейчас?</h1>
+        <p className="mt-2 text-sm text-zinc-400 sm:text-base">Выбери собеседника по интересам и настроению.</p>
         <div className="mt-6 flex justify-center gap-3">
           {!searching ? (
             <Button
               size="lg"
+              className="w-full sm:w-auto"
               onClick={() => {
                 setError("");
                 setStatusText("🔎 Ищем тебе собеседника…");
@@ -81,7 +82,7 @@ export default function MatchPage() {
               Найти собеседника
             </Button>
           ) : (
-            <Button variant="secondary" size="lg" onClick={cancel}>
+            <Button variant="secondary" size="lg" className="w-full sm:w-auto" onClick={cancel}>
               Отменить поиск
             </Button>
           )}
