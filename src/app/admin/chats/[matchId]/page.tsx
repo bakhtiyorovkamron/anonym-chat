@@ -72,7 +72,7 @@ export default async function AdminChatViewPage({ params }: { params: Promise<{ 
               Подтвердил: {(i === 0 ? match.acceptedA : match.acceptedB) ? "да" : "нет"}
             </p>
             <div className="mt-2">
-              <BanActions userId={u.id} banned={u.banned} />
+              <UserActions userId={u.id} banned={u.banned} redirectTo="/admin/chats" />
             </div>
           </Card>
         ))}

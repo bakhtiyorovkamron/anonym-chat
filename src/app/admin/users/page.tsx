@@ -122,7 +122,7 @@ export default async function AdminUsersPage({
                     Создан: {new Date(u.createdAt).toLocaleString()} · Был: {new Date(u.lastSeenAt).toLocaleString()}
                   </p>
                 </div>
-                <BanActions userId={u.id} banned={u.banned} />
+                <UserActions userId={u.id} banned={u.banned} />
               </div>
             </Card>
           );
