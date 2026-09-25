@@ -60,6 +60,7 @@ enum ReportStatus {
 enum MessageType {
   TEXT
   STICKER
+  IMAGE
 }
 
 enum AdminRole {
@@ -142,6 +143,7 @@ model Message {
   type      MessageType @default(TEXT)
   text      String      @default("")
   stickerId String?
+  imageFile String?
   createdAt DateTime    @default(now())
   deletedAt DateTime?
   replyToId String?

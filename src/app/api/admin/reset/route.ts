@@ -3,6 +3,8 @@ import type { Server } from "socket.io";
 import { assertCsrf } from "@/lib/csrf";
 import { isAdminRequest } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { rm } from "fs/promises";
+import { PHOTO_DIR } from "@/lib/photo-storage";
 
 const CONFIRM_PHRASE = "УДАЛИТЬ ВСЁ";
 
@@ -33,6 +35,9 @@ export async function POST(request: NextRequest) {
   // Kick every connected client so they re-create a fresh anonymous session.
   const io = (globalThis as Record<string, unknown>).__anonChatIo as Server | undefined;
   io?.disconnectSockets(true);
+
+  // Remove all user-uploaded photos from disk.
+  await rm(PHOTO_DIR, { recursive: true, force: true }).catch(() => {});
 
   return NextResponse.json({
     ok: true,

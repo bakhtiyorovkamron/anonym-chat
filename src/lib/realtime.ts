@@ -11,3 +11,7 @@ export type MatchEndReason = "ended" | "blocked";
 export function emitMatchEnded(matchId: string, endedBy: string, reason: MatchEndReason = "ended") {
   getIo()?.to(`match:${matchId}`).emit("match_ended", { matchId, endedBy, reason });
 }
+
+export function emitNewMessage(matchId: string, message: unknown) {
+  getIo()?.to(`match:${matchId}`).emit("new_message", message);
+}

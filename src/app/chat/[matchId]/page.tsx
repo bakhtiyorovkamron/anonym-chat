@@ -12,9 +12,10 @@ import { getCsrfTokenFromCookie } from "@/lib/utils";
 type ChatMessage = {
   id: string;
   senderId: string;
-  type?: "TEXT" | "STICKER";
+  type?: "TEXT" | "STICKER" | "IMAGE";
   text: string;
   sticker?: { url: string; name: string; mimeType?: string } | null;
+  image?: { url: string } | null;
   createdAt: string;
   deletedAt: string | null;
   replyToId: string | null;
@@ -70,6 +71,9 @@ export default function ChatPage() {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [viewer, setViewer] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -98,7 +102,8 @@ export default function ChatPage() {
     socket.emit("join_match", { matchId });
 
     const onMessage = (message: ChatMessage) => {
-      setMessages((prev) => [...prev, message]);
+      // Photo sender already added it from the HTTP response; avoid duplicates.
+      setMessages((prev) => (prev.some((m) => m.id === message.id) ? prev : [...prev, message]));
     };
 
     const onTyping = (state: { typing: boolean }) => {
@@ -231,12 +236,45 @@ export default function ChatPage() {
     });
   };
 
+  const sendPhoto = async (file: File) => {
+    if (ended) return;
+    if (file.size > 8 * 1024 * 1024) {
+      setError("Фото больше 8 МБ.");
+      return;
+    }
+    setError("");
+    setPickerOpen(false);
+    setUploading(true);
+    try {
+      const form = new FormData();
+      form.append("file", file);
+      const response = await fetch(`/api/matches/${matchId}/photos`, {
+        method: "POST",
+        headers: { "x-csrf-token": getCsrfTokenFromCookie() },
+        body: form,
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        handleSendError({ error: data.error || "Не удалось отправить фото" });
+        return;
+      }
+      if (data.message) {
+        setMessages((prev) => (prev.some((m) => m.id === data.message.id) ? prev : [...prev, data.message]));
+      }
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
   const deleteMessage = async (messageId: string) => {
     await fetch(`/api/messages/${messageId}`, {
       method: "DELETE",
       headers: { "x-csrf-token": getCsrfTokenFromCookie() },
     });
-    setMessages((prev) => prev.map((item) => (item.id === messageId ? { ...item, deletedAt: new Date().toISOString() } : item)));
+    setMessages((prev) =>
+      prev.map((item) => (item.id === messageId ? { ...item, deletedAt: new Date().toISOString(), image: null } : item)),
+    );
   };
 
   return (
@@ -378,15 +416,31 @@ export default function ChatPage() {
               ? `${match?.me.nickname ?? "Ты"} (ты)`
               : match?.partner.nickname ?? "Собеседник";
             const isGif = msg.type === "STICKER";
+            const isImage = msg.type === "IMAGE";
+            const isMedia = isGif || isImage;
 
             return (
               <div key={msg.id} className={`flex max-w-[85%] flex-col sm:max-w-[75%] ${isMine ? "self-end items-end" : "self-start items-start"}`}>
                 <span className={`mb-1 px-1 text-xs font-medium ${isMine ? "text-violet-300" : "text-emerald-300"}`}>
                   {senderName}
                 </span>
-                <div className={`rounded-2xl text-sm ${isGif && !msg.deletedAt ? "p-1.5" : "px-3 py-2"} ${isMine ? "bg-violet-600/30" : "bg-zinc-800"}`}>
+                <div className={`rounded-2xl text-sm ${isMedia && !msg.deletedAt ? "p-1.5" : "px-3 py-2"} ${isMine ? "bg-violet-600/30" : "bg-zinc-800"}`}>
                   {msg.deletedAt ? (
                     <p className="italic text-zinc-400">Сообщение удалено</p>
+                  ) : isImage ? (
+                    msg.image ? (
+                      <button type="button" onClick={() => setViewer(msg.image!.url)} className="block">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={msg.image.url}
+                          alt="Фото"
+                          loading="lazy"
+                          className="max-h-72 max-w-[70vw] rounded-xl object-contain sm:max-w-xs"
+                        />
+                      </button>
+                    ) : (
+                      <p className="italic text-zinc-400">Фото недоступно</p>
+                    )
                   ) : isGif ? (
                     msg.sticker ? (
                       <GifMedia
@@ -401,14 +455,14 @@ export default function ChatPage() {
                   ) : (
                     <p className="whitespace-pre-wrap break-words">{msg.text}</p>
                   )}
-                  <div className={`mt-1 flex flex-wrap items-center gap-3 text-[11px] text-zinc-500 ${isGif && !msg.deletedAt ? "px-1.5" : ""}`}>
+                  <div className={`mt-1 flex flex-wrap items-center gap-3 text-[11px] text-zinc-500 ${isMedia && !msg.deletedAt ? "px-1.5" : ""}`}>
                     <span>{new Date(msg.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
                     {isMine && !msg.deletedAt ? (
                       <button onClick={() => deleteMessage(msg.id)} className="py-1 text-zinc-400 underline">
                         удалить
                       </button>
                     ) : null}
-                    {!msg.deletedAt && !isGif ? (
+                    {!msg.deletedAt && !isMedia ? (
                       <button onClick={() => navigator.clipboard?.writeText(msg.text)} className="py-1 text-zinc-400 underline">
                         копировать
                       </button>
@@ -462,6 +516,18 @@ export default function ChatPage() {
         ) : null}
 
         {error ? <p className="mb-2 text-sm text-red-400">{error}</p> : null}
+        {uploading ? <p className="mb-2 text-sm text-violet-200">📤 Отправляем фото…</p> : null}
+
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/jpeg,image/png,image/webp,image/gif"
+          className="hidden"
+          onChange={(event) => {
+            const file = event.target.files?.[0];
+            if (file) sendPhoto(file);
+          }}
+        />
 
         <form
           className="flex items-center gap-2"
@@ -480,6 +546,17 @@ export default function ChatPage() {
             className={`h-11 shrink-0 px-3 sm:h-10 ${pickerOpen ? "bg-violet-600/40" : ""}`}
           >
             GIF
+          </Button>
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={Boolean(ended) || uploading}
+            aria-label="Фото"
+            title="Отправить фото"
+            className="h-11 shrink-0 px-3 sm:h-10"
+          >
+            📷
           </Button>
           <Input
             value={input}
@@ -501,6 +578,23 @@ export default function ChatPage() {
           </Button>
         </form>
       </footer>
+
+      {viewer ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4"
+          onClick={() => setViewer(null)}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={viewer} alt="Фото" className="max-h-full max-w-full object-contain" />
+          <button
+            type="button"
+            className="absolute right-4 top-[max(1rem,env(safe-area-inset-top))] h-10 w-10 rounded-full bg-zinc-800 text-xl"
+            aria-label="Закрыть"
+          >
+            ✕
+          </button>
+        </div>
+      ) : null}
     </main>
   );
 }

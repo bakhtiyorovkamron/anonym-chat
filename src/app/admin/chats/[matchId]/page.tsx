@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { isAdminCookie } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { stickerUrl } from "@/lib/sticker-storage";
+import { photoUrl } from "@/lib/photo-storage";
 import { Card } from "@/components/ui/card";
 import { AutoRefresh } from "@/components/admin/auto-refresh";
 import { UserActions } from "@/components/admin/admin-actions";
@@ -110,7 +111,17 @@ export default async function AdminChatViewPage({ params }: { params: Promise<{ 
                 } ${m.deletedAt ? "opacity-50" : ""}`}
               >
                 <p className="text-xs font-semibold text-zinc-300">{nameOf(m.senderId)}</p>
-                {m.sticker ? (
+                {m.imageFile ? (
+                  <a href={photoUrl(m.imageFile)} target="_blank" rel="noreferrer" className="mt-1 block">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={photoUrl(m.imageFile)}
+                      alt="Фото"
+                      loading="lazy"
+                      className="max-h-64 max-w-full rounded-xl object-contain"
+                    />
+                  </a>
+                ) : m.sticker ? (
                   <div className="mt-1 w-40">
                     <GifMedia
                       url={stickerUrl(m.sticker.fileName)}

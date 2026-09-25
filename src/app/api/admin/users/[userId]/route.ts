@@ -3,6 +3,7 @@ import { assertCsrf } from "@/lib/csrf";
 import { isAdminRequest } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { emitMatchEnded } from "@/lib/realtime";
+import { deletePhotoFile } from "@/lib/photo-storage";
 
 export async function DELETE(request: NextRequest, context: { params: Promise<{ userId: string }> }) {
   if (!(await assertCsrf(request))) {
@@ -23,8 +24,15 @@ export async function DELETE(request: NextRequest, context: { params: Promise<{ 
   });
   for (const m of active) emitMatchEnded(m.id, userId, "blocked");
 
+  // Photos in all of this user's chats are removed along with the chats.
+  const photos = await prisma.message.findMany({
+    where: { imageFile: { not: null }, match: { OR: [{ userAId: userId }, { userBId: userId }] } },
+    select: { imageFile: true },
+  });
+
   // Cascades: personas, messages, matches, blocks, reports, queue entry.
   await prisma.user.delete({ where: { id: userId } });
+  await Promise.all(photos.map((p) => (p.imageFile ? deletePhotoFile(p.imageFile) : null)));
 
   return NextResponse.json({ ok: true });
 }

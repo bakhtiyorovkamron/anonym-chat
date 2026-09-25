@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getUserFromRequest } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { stickerUrl } from "@/lib/sticker-storage";
+import { photoUrl } from "@/lib/photo-storage";
 
 export async function GET(request: NextRequest, context: { params: Promise<{ matchId: string }> }) {
   const user = await getUserFromRequest(request);
@@ -49,9 +50,10 @@ export async function GET(request: NextRequest, context: { params: Promise<{ mat
         online: partner.online,
       },
     },
-    messages: match.messages.map(({ sticker, ...message }) => ({
+    messages: match.messages.map(({ sticker, imageFile, ...message }) => ({
       ...message,
       sticker: sticker ? { url: stickerUrl(sticker.fileName), name: sticker.name, mimeType: sticker.mimeType } : null,
+      image: imageFile && !message.deletedAt ? { url: photoUrl(imageFile) } : null,
     })),
   });
 }
