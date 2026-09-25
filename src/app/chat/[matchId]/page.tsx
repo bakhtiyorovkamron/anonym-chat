@@ -77,6 +77,10 @@ export default function ChatPage() {
       const response = await fetch(`/api/matches/${matchId}/messages`);
       const data = await response.json().catch(() => ({}));
       if (!response.ok) {
+        if (data.pending) {
+          router.replace("/match");
+          return;
+        }
         setError(data.error || "Не удалось загрузить чат");
         return;
       }
@@ -87,7 +91,7 @@ export default function ChatPage() {
     };
 
     load();
-  }, [matchId]);
+  }, [matchId, router]);
 
   useEffect(() => {
     const socket = getSocket();

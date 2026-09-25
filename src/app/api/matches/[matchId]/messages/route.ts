@@ -25,6 +25,10 @@ export async function GET(request: NextRequest, context: { params: Promise<{ mat
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
+  if (match.status === "ACTIVE" && !(match.acceptedA && match.acceptedB)) {
+    return NextResponse.json({ error: "Not confirmed", pending: true }, { status: 409 });
+  }
+
   const partner = match.userAId === user.id ? match.userB : match.userA;
   const self = match.userAId === user.id ? match.userA : match.userB;
   const activePersona = partner.personas[0];

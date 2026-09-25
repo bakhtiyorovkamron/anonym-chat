@@ -114,6 +114,8 @@ model Match {
   userAId   String
   userBId   String
   status    MatchStatus @default(ACTIVE)
+  acceptedA Boolean     @default(false)
+  acceptedB Boolean     @default(false)
   createdAt DateTime    @default(now())
   endedAt   DateTime?
 

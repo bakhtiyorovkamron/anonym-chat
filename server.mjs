@@ -189,6 +189,7 @@ app.prepare().then(() => {
         }
 
         if (!match || match.status !== "ACTIVE") return reply({ error: "Match is not active." });
+        if (!match.acceptedA || !match.acceptedB) return reply({ error: "Чат ещё не подтверждён." });
         if (match.userAId !== userId && match.userBId !== userId) {
           return reply({ error: "Cannot send message to this match." });
         }
